@@ -1,0 +1,13 @@
+{
+  "api": {
+    "details_Url": "https://ipps.maxim-dps.com:5001/api/Data",
+    "display_Url": "https://ipps.maxim-dps.com:5001/api/Data/MachineStates",
+    "zpl_display_Url": "https://ipps.maxim-dps.com:5001/api/zpl/latest",
+    "zpl_history_Url": "https://ipps.maxim-dps.com:5001/api/zpl/history",
+    "production_rate_Url": "https://ipps.maxim-dps.com:5001/api/zpl/production-rate",
+    "login_Url": "https://ipps.maxim-dps.com:5001/api/Auth/Login",
+    "dashboard_summary_Url": "https://ipps.maxim-dps.com:5001/api/Data/dashboard/summary",
+    "dashboard_liandian_Url": "https://ipps.maxim-dps.com:5001/api/Data/dashboard/liandian",
+    "zpl_daily_summary_Url": "https://ipps.maxim-dps.com:5001/api/zpl/dashboard/daily-summary"
+  }
+}

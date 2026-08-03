@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/node_modules/
+web_app/wwwroot/app/
+.superpowers/
+.vs/
+*.user
+
+web_app/test-results/
+web_app/playwright-report/
