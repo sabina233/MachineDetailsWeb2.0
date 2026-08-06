@@ -21,6 +21,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/liandian/:category/region/:countryCode',
+    name: 'liandian-region',
+    component: () => import('../views/RegionMachinesView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/liandian/:category/detail',
     name: 'liandian-detail',
     component: () => import('../views/LiandianDetailView.vue'),

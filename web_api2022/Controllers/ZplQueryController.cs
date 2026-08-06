@@ -23,18 +23,22 @@ namespace web_api2022.Controllers
             _dashboardService = dashboardService;
         }
 
-        // GET: /api/zpl/dashboard/daily-summary?date=yyyy-MM-dd
+        // GET: /api/zpl/dashboard/daily-summary?startDate=yyyy-MM-dd&endDate=yyyy-MM-dd
         [HttpGet("dashboard/daily-summary")]
-        public async Task<IActionResult> GetDailySummary([FromQuery] string date)
+        public async Task<IActionResult> GetDailySummary(
+            [FromQuery] string startDate, [FromQuery] string endDate)
         {
-            if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                DateTimeStyles.None, out var selectedDate))
+            if (!DateOnly.TryParseExact(startDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out var start)
+                || !DateOnly.TryParseExact(endDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out var end)
+                || end < start)
             {
-                return BadRequest(new { message = "date must use yyyy-MM-dd" });
+                return BadRequest(new { message = "startDate/endDate must use yyyy-MM-dd and endDate must be >= startDate" });
             }
 
             return Ok(await _dashboardService.GetZplDailySummaryAsync(
-                selectedDate, HttpContext?.RequestAborted ?? CancellationToken.None));
+                start, end, HttpContext?.RequestAborted ?? CancellationToken.None));
         }
 
         // GET: /api/zpl/latest

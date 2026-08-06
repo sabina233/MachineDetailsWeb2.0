@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": ".NET Backend (web_api2022)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/web_api2022/web_api2022.csproj",
+      "launchSettingsProfile": "http",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  ]
+}

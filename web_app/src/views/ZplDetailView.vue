@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { dashboardApi, zplApi } from '../services/api'
+import { filters } from '../services/filterStore'
 import TrendChart from '../components/TrendChart.vue'
 import DateRangeFilter from '../components/DateRangeFilter.vue'
 
@@ -16,21 +17,18 @@ const dailyTotal = ref(0)
 const trend = ref({ labels: [], values: [] })
 const error = ref('')
 
-const defaultStart = () => new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10)
-const defaultEnd = () => new Date().toISOString().slice(0, 10)
-
 function formatTs(timestamp) {
   return timestamp ? String(timestamp).replace('T', ' ').slice(0, 19) : '-'
 }
 
 async function load({ start, end } = {}) {
   error.value = ''
-  const s = start || defaultStart()
-  const e = end || defaultEnd()
+  const s = start || filters.range.start
+  const e = end || filters.range.end
   try {
     const [history, daily] = await Promise.all([
       zplApi.getHistory(userName.value, s, e, page.value, pageSize),
-      dashboardApi.getZplSummary(e)
+      dashboardApi.getZplSummary(s, e)
     ])
     rows.value = history.data || []
     totalPages.value = history.totalPages || 1
@@ -40,6 +38,12 @@ async function load({ start, end } = {}) {
   } catch {
     error.value = '加载失败，请重试'
   }
+}
+
+function onRange({ start, end }) {
+  filters.range.start = start
+  filters.range.end = end
+  load()
 }
 
 function buildTrend(historyRows) {
@@ -69,7 +73,11 @@ onMounted(load)
     <header class="topbar">
       <button type="button" class="btn btn-ghost" @click="router.push('/zpl')">返回列表</button>
       <h1>ZPL 用户详情 · {{ userName }}</h1>
-      <DateRangeFilter @query="load" />
+      <DateRangeFilter
+        :start="filters.range.start"
+        :end="filters.range.end"
+        @query="onRange"
+      />
     </header>
     <p v-if="error" class="error">{{ error }}</p>
 

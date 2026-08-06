@@ -2,9 +2,11 @@ namespace web_api2022.Services;
 
 public interface IProductionDashboardService
 {
-    Task<DashboardSummary> GetDashboardAsync(DateOnly date, string? category, CancellationToken cancellationToken);
+    Task<DashboardSummary> GetDashboardAsync(
+        DateOnly startDate, DateOnly endDate, string? category, CancellationToken cancellationToken);
 
-    Task<ZplDailySummary> GetZplDailySummaryAsync(DateOnly date, CancellationToken cancellationToken);
+    Task<ZplDailySummary> GetZplDailySummaryAsync(
+        DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -20,7 +22,8 @@ public sealed record MachineDailySummary(
     long ActiveSeconds,
     int ProductQuantity,
     int State,
-    DateTime Timestamp);
+    DateTime Timestamp,
+    string? CountryCode);
 
 /// <summary>
 /// 联点分类（卷状 roll / 单片 single）的日汇总。

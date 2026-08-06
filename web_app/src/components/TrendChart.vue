@@ -4,6 +4,29 @@ import { Chart, registerables } from 'chart.js'
 
 Chart.register(...registerables)
 
+// 在柱顶绘制数值标签
+const valueLabels = {
+  id: 'valueLabels',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      const meta = chart.getDatasetMeta(datasetIndex)
+      meta.data.forEach((bar, index) => {
+        const value = dataset.data[index]
+        if (value === null || value === undefined || value === 0) {
+          return
+        }
+        ctx.save()
+        ctx.fillStyle = '#0F3D66'
+        ctx.font = "600 11px -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif"
+        ctx.textAlign = 'center'
+        ctx.fillText(String(value), bar.x, bar.y - 6)
+        ctx.restore()
+      })
+    })
+  }
+}
+
 const props = defineProps({
   labels: { type: Array, default: () => [] },
   values: { type: Array, default: () => [] },
@@ -26,19 +49,29 @@ function render() {
   }
   chart = new Chart(ctx, {
     type: 'bar',
+    plugins: [valueLabels],
     data: {
       labels: props.labels,
-      datasets: [{ label: props.label, data: props.values, backgroundColor: '#2f6fed' }]
+      datasets: [
+        {
+          label: props.label,
+          data: props.values,
+          backgroundColor: '#0A84FF',
+          borderRadius: 6,
+          maxBarThickness: 34
+        }
+      ]
     },
-    options: {
+      options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: 18 } },
       plugins: {
-        legend: { labels: { color: '#ffffff' } }
+        legend: { labels: { color: '#475569' } }
       },
       scales: {
-        x: { ticks: { color: '#9fa3c9' } },
-        y: { ticks: { color: '#9fa3c9' } }
+        x: { grid: { color: '#EFF3F9' }, ticks: { color: '#64748B' } },
+        y: { grid: { color: '#EFF3F9' }, ticks: { color: '#64748B' } }
       }
     }
   })

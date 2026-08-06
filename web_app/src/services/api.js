@@ -10,14 +10,19 @@ export async function ensureConfig() {
   if (apiConfig) {
     return apiConfig
   }
-  try {
-    const res = await fetch('/config/ApiUrl.json', { cache: 'no-store' })
-    if (res.ok) {
-      const json = await res.json()
-      apiConfig = json.api ?? {}
+  // 开发（Vite base=/app/）与生产（wwwroot/app 构建产物）都优先使用 /app/config/ApiUrl.json，
+  // 再回退到 ASP.NET 托管的 /config/ApiUrl.json。
+  for (const path of [import.meta.env.BASE_URL + 'config/ApiUrl.json', '/config/ApiUrl.json']) {
+    try {
+      const res = await fetch(path, { cache: 'no-store' })
+      if (res.ok) {
+        const json = await res.json()
+        apiConfig = json.api ?? {}
+        break
+      }
+    } catch {
+      // 尝试下一个路径
     }
-  } catch {
-    // 配置加载失败时保留默认相对地址
   }
   return apiConfig ?? {}
 }
@@ -65,9 +70,10 @@ function makeUrl(base, params) {
 }
 
 export const dashboardApi = {
-  getSummary: (date) => request('dashboard_summary_Url', { date }),
-  getLiandian: (date, category) => request('dashboard_liandian_Url', { date, category }),
-  getZplSummary: (date) => request('zpl_daily_summary_Url', { date })
+  getSummary: (startDate, endDate) => request('dashboard_summary_Url', { startDate, endDate }),
+  getLiandian: (startDate, endDate, category) =>
+    request('dashboard_liandian_Url', { startDate, endDate, category }),
+  getZplSummary: (startDate, endDate) => request('zpl_daily_summary_Url', { startDate, endDate })
 }
 
 export const authApi = {
@@ -84,6 +90,7 @@ export const authApi = {
 }
 
 export const machineApi = {
+  getMachines: () => detailsRequest('/dashboard/machines', {}),
   getRealTime: (machineName) => detailsRequest('/RealTimeData', { machineName }),
   getHistory: (machineName, startDate, endDate) => detailsRequest('/HistoryRecords', { machineName, startDate, endDate }),
   getOrderChart: (machineName, startDate, endDate) => detailsRequest('/OrderProductionChart', { machineName, startDate, endDate }),

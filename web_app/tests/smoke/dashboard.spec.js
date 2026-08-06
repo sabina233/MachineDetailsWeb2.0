@@ -66,10 +66,10 @@ test('login routes to dashboard and exposes three production sections', async ({
 
   await page.goto('/app/dashboard')
 
-  await expect(page.getByText('今日总产量')).toBeVisible()
+  await expect(page.getByText('时段总产量')).toBeVisible()
   await expect(page.getByText('联点 · 卷状机台')).toBeVisible()
   await expect(page.getByText('联点 · 单片机台')).toBeVisible()
-  await expect(page.getByText('ZPL')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'ZPL' })).toBeVisible()
   await expect(page.locator('[data-test="category-section"]')).toHaveCount(3)
 })
 

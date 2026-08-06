@@ -68,7 +68,7 @@ describe('DashboardView', () => {
     await flushPromises()
 
     expect(wrapper.findAll('[data-test="category-section"]')).toHaveLength(3)
-    expect(wrapper.text()).toContain('今日总产量')
+    expect(wrapper.text()).toContain('总产量')
     expect(wrapper.findAll('[data-test="category-section"]')[0].attributes('data-category')).toBe('roll')
   })
 })

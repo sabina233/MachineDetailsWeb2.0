@@ -1,10 +1,28 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   rows: { type: Array, default: () => [] },
   category: { type: String, default: 'machine' }
 })
 
 const emit = defineEmits(['row-click'])
+
+function capacityOf(row) {
+  return row.activeSeconds > 0 ? row.productQuantity / (row.activeSeconds / 3600) : null
+}
+
+const maxCapacity = computed(() =>
+  Math.max(0, ...props.rows.map(capacityOf).filter((v) => v != null))
+)
+
+function capacityPct(value) {
+  return maxCapacity.value > 0 ? Math.round((value / maxCapacity.value) * 100) : 0
+}
+
+function formatCapacity(value) {
+  return value == null ? '—' : `${value.toFixed(1)}`
+}
 
 function formatSeconds(seconds) {
   const s = Number(seconds) || 0
@@ -34,6 +52,7 @@ function formatTs(timestamp) {
             <th>机台</th>
             <th>产量</th>
             <th>有效时长</th>
+            <th>产能</th>
             <th>状态</th>
             <th>最新时间</th>
           </template>
@@ -64,6 +83,17 @@ function formatTs(timestamp) {
             <td>{{ row.machineName }}</td>
             <td>{{ row.productQuantity }}</td>
             <td>{{ formatSeconds(row.activeSeconds) }}</td>
+            <td>
+              <div class="capacity-cell">
+                <span class="capacity-value">{{ formatCapacity(capacityOf(row)) }}</span>
+                <span class="capacity-unit">/时</span>
+                <span
+                  v-if="capacityOf(row) != null"
+                  class="capacity-bar"
+                  :style="{ width: capacityPct(capacityOf(row)) + '%' }"
+                ></span>
+              </div>
+            </td>
             <td>
               <span class="status" :class="row.state === 1 ? 'status--on' : 'status--off'">
                 {{ row.state === 1 ? '开启' : '关闭' }}

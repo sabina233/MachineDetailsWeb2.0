@@ -15,7 +15,7 @@ public class DashboardEndpointTests
     {
         var controller = CreateDataController();
 
-        var result = await controller.GetDashboardSummary("2026-13-99");
+        var result = await controller.GetDashboardSummary("2026-13-99", "2026-08-04");
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -25,7 +25,7 @@ public class DashboardEndpointTests
     {
         var controller = CreateDataController();
 
-        var result = await controller.GetLiandianDashboard("2026-08-03", "bogus");
+        var result = await controller.GetLiandianDashboard("2026-08-03", "2026-08-03", "bogus");
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
@@ -35,7 +35,7 @@ public class DashboardEndpointTests
     {
         var controller = CreateZplController();
 
-        var result = await controller.GetDailySummary("2026-08-03");
+        var result = await controller.GetDailySummary("2026-08-03", "2026-08-03");
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var summary = Assert.IsType<ZplDailySummary>(ok.Value);
@@ -63,7 +63,7 @@ public class DashboardEndpointTests
     private sealed class StubDashboardService : IProductionDashboardService
     {
         public Task<DashboardSummary> GetDashboardAsync(
-            DateOnly date, string? category, CancellationToken cancellationToken)
+            DateOnly startDate, DateOnly endDate, string? category, CancellationToken cancellationToken)
             => Task.FromResult(new DashboardSummary(
                 0,
                 new LiandianDailySummary("roll", 0, 0, 0, Array.Empty<MachineDailySummary>()),
@@ -71,7 +71,7 @@ public class DashboardEndpointTests
                 new ZplDailySummary(0, 0, Array.Empty<ZplUserDailySummary>())));
 
         public Task<ZplDailySummary> GetZplDailySummaryAsync(
-            DateOnly date, CancellationToken cancellationToken)
+            DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
             => Task.FromResult(new ZplDailySummary(
                 70,
                 2,

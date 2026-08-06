@@ -1,58 +1,85 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { dashboardApi } from '../services/api'
-import SummaryTotal from '../components/SummaryTotal.vue'
-import ProductionTable from '../components/ProductionTable.vue'
-import TrendChart from '../components/TrendChart.vue'
+import { machineApi } from '../services/api'
 
 const route = useRoute()
 const router = useRouter()
-const category = ref(route.params.category === 'single' ? 'single' : 'roll')
-const date = ref(new Date().toISOString().slice(0, 10))
-const summary = ref(null)
+const machines = ref([])
 const error = ref('')
+
+const regionNames = {
+  CN: '中国',
+  US: '美国',
+  JP: '日本',
+  DE: '德国',
+  GB: '英国',
+  FR: '法国',
+  KR: '韩国',
+  IN: '印度',
+  VN: '越南'
+}
 
 async function load() {
   error.value = ''
   try {
-    summary.value = await dashboardApi.getLiandian(date.value, category.value)
+    machines.value = await machineApi.getMachines()
   } catch {
     error.value = '加载失败，请重试'
   }
 }
 
-function openDetail(machine) {
-  router.push({
-    path: `/liandian/${category.value}/detail`,
-    query: { machineName: machine.machineName }
-  })
+const regions = computed(() => {
+  const map = new Map()
+  for (const machine of machines.value) {
+    const code = machine.countryCode || '未知'
+    if (!map.has(code)) {
+      map.set(code, { code, machines: [] })
+    }
+    map.get(code).machines.push(machine)
+  }
+  return [...map.values()].sort((a, b) => b.machines.length - a.machines.length)
+})
+
+function openRegion(code) {
+  router.push(`/liandian/${route.params.category || 'roll'}/region/${encodeURIComponent(code)}`)
 }
 
 onMounted(load)
-watch(category, load)
 </script>
 
 <template>
-  <div class="page" data-test="liandian-list">
+  <div class="page fade-up" data-test="liandian-list">
     <header class="topbar">
       <button type="button" class="btn btn-ghost" @click="router.push('/dashboard')">返回看板</button>
-      <h1>{{ category === 'roll' ? '联点 · 卷状机台' : '联点 · 单片机台' }}</h1>
-      <input type="date" v-model="date" @change="load" />
+      <h1>联点机台 · 区域</h1>
     </header>
     <p v-if="error" class="error">{{ error }}</p>
-    <template v-if="summary">
-      <SummaryTotal :total="summary.totalQuantity" :date="date" />
-      <TrendChart
-        :labels="(summary.machines || []).map((m) => m.machineName)"
-        :values="(summary.machines || []).map((m) => m.productQuantity)"
-        label="机台产量"
-      />
-      <ProductionTable
-        :rows="summary.machines || []"
-        category="machine"
-        @row-click="openDetail"
-      />
-    </template>
+
+    <div v-if="regions.length" class="region-grid">
+      <button
+        v-for="(region, index) in regions"
+        :key="region.code"
+        type="button"
+        class="region-card card fade-up"
+        :style="{ animationDelay: index * 60 + 'ms' }"
+        @click="openRegion(region.code)"
+      >
+        <span class="region-card__icon">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+        </span>
+        <span class="region-card__name">{{ regionNames[region.code] || region.code }}</span>
+        <span class="region-card__code">{{ region.code }}</span>
+        <span class="region-card__machines">
+          <span class="region-card__count">{{ region.machines.length }} 台机台</span>
+          <span class="region-card__names">{{ region.machines.map((m) => m.machineName).join('、') }}</span>
+        </span>
+        <span class="region-card__arrow">→</span>
+      </button>
+    </div>
+    <p v-else-if="!error" class="empty-note">暂无区域数据</p>
   </div>
 </template>

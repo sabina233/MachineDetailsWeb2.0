@@ -42,18 +42,18 @@ public sealed class ProductionDashboardService : IProductionDashboardService
     }
 
     public async Task<DashboardSummary> GetDashboardAsync(
-        DateOnly date, string? category, CancellationToken cancellationToken)
+        DateOnly startDate, DateOnly endDate, string? category, CancellationToken cancellationToken)
     {
         var roll = category is null or "roll"
-            ? await BuildLiandianSummaryAsync(date, "roll", cancellationToken)
+            ? await BuildLiandianSummaryAsync(startDate, endDate, "roll", cancellationToken)
             : EmptyLiandianSummary("roll");
 
         var single = category is null or "single"
-            ? await BuildLiandianSummaryAsync(date, "single", cancellationToken)
+            ? await BuildLiandianSummaryAsync(startDate, endDate, "single", cancellationToken)
             : EmptyLiandianSummary("single");
 
         var zpl = category is null
-            ? await GetZplDailySummaryAsync(date, cancellationToken)
+            ? await GetZplDailySummaryAsync(startDate, endDate, cancellationToken)
             : new ZplDailySummary(0, 0, Array.Empty<ZplUserDailySummary>());
 
         return new DashboardSummary(
@@ -64,10 +64,10 @@ public sealed class ProductionDashboardService : IProductionDashboardService
     }
 
     public async Task<ZplDailySummary> GetZplDailySummaryAsync(
-        DateOnly date, CancellationToken cancellationToken)
+        DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
     {
-        var start = date.ToDateTime(TimeOnly.MinValue);
-        var end = start.AddDays(1);
+        var start = startDate.ToDateTime(TimeOnly.MinValue);
+        var end = endDate.ToDateTime(TimeOnly.MinValue).AddDays(1);
 
         var closedRecords = await _db.ZPL_DataRecords
             .Where(r => r.Timestamp >= start
@@ -101,10 +101,10 @@ public sealed class ProductionDashboardService : IProductionDashboardService
     }
 
     private async Task<LiandianDailySummary> BuildLiandianSummaryAsync(
-        DateOnly date, string category, CancellationToken cancellationToken)
+        DateOnly startDate, DateOnly endDate, string category, CancellationToken cancellationToken)
     {
-        var start = date.ToDateTime(TimeOnly.MinValue);
-        var end = start.AddDays(1);
+        var start = startDate.ToDateTime(TimeOnly.MinValue);
+        var end = endDate.ToDateTime(TimeOnly.MinValue).AddDays(1);
 
         var dayRecords = await _db.DataRecords
             .Where(r => r.Timestamp >= start && r.Timestamp < end)
@@ -113,8 +113,16 @@ public sealed class ProductionDashboardService : IProductionDashboardService
                 r.Timestamp,
                 r.Data.State,
                 r.Data.TaskName,
-                r.Data.ProductQuantity))
+                r.Data.ProductQuantity,
+                r.CountryCode))
             .ToListAsync(cancellationToken);
+
+        // 地区以 DataLatest 为准（当前机台所在区域），缺省时回退到当天最新记录的地区。
+        var latestByMachine = (await _db.DataLatest
+                .Select(d => new { d.MachineName, d.CountryCode })
+                .ToListAsync(cancellationToken))
+            .GroupBy(d => d.MachineName)
+            .ToDictionary(g => g.Key, g => g.First().CountryCode);
 
         var machines = dayRecords
             .Where(r => ClassifyMachine(r.MachineName) == category)
@@ -136,7 +144,10 @@ public sealed class ProductionDashboardService : IProductionDashboardService
                         ordered.Select(r => new LiandianRecord(r.Timestamp, r.State)).ToList()),
                     outputByTask,
                     ordered.Last().State,
-                    ordered.Last().Timestamp);
+                    ordered.Last().Timestamp,
+                    latestByMachine.TryGetValue(g.Key, out var code) && !string.IsNullOrWhiteSpace(code)
+                        ? code
+                        : ordered.Last().CountryCode);
             })
             .ToList();
 
@@ -157,4 +168,5 @@ internal sealed record LiandianRow(
     DateTime Timestamp,
     int State,
     string TaskName,
-    int ProductQuantity);
+    int ProductQuantity,
+    string? CountryCode);

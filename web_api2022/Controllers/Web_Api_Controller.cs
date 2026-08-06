@@ -36,28 +36,28 @@ namespace web_api2022.Controllers
             _dashboardService = dashboardService;
         }
 
-        // GET: /api/Data/dashboard/summary?date=yyyy-MM-dd
+        // GET: /api/Data/dashboard/summary?startDate=yyyy-MM-dd&endDate=yyyy-MM-dd
         [HttpGet("dashboard/summary")]
-        public async Task<IActionResult> GetDashboardSummary([FromQuery] string date)
+        public async Task<IActionResult> GetDashboardSummary(
+            [FromQuery] string startDate, [FromQuery] string endDate)
         {
-            if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                DateTimeStyles.None, out var selectedDate))
+            if (!TryParseRange(startDate, endDate, out var start, out var end))
             {
-                return BadRequest(new { message = "date must use yyyy-MM-dd" });
+                return BadRequest(new { message = "startDate/endDate must use yyyy-MM-dd and endDate must be >= startDate" });
             }
 
             return Ok(await _dashboardService.GetDashboardAsync(
-                selectedDate, null, HttpContext?.RequestAborted ?? CancellationToken.None));
+                start, end, null, HttpContext?.RequestAborted ?? CancellationToken.None));
         }
 
-        // GET: /api/Data/dashboard/liandian?date=yyyy-MM-dd&category=roll|single
+        // GET: /api/Data/dashboard/liandian?startDate=yyyy-MM-dd&endDate=yyyy-MM-dd&category=roll|single
         [HttpGet("dashboard/liandian")]
-        public async Task<IActionResult> GetLiandianDashboard([FromQuery] string date, [FromQuery] string? category = null)
+        public async Task<IActionResult> GetLiandianDashboard(
+            [FromQuery] string startDate, [FromQuery] string endDate, [FromQuery] string? category = null)
         {
-            if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                DateTimeStyles.None, out var selectedDate))
+            if (!TryParseRange(startDate, endDate, out var start, out var end))
             {
-                return BadRequest(new { message = "date must use yyyy-MM-dd" });
+                return BadRequest(new { message = "startDate/endDate must use yyyy-MM-dd and endDate must be >= startDate" });
             }
 
             if (category is not (null or "roll" or "single"))
@@ -66,7 +66,42 @@ namespace web_api2022.Controllers
             }
 
             return Ok(await _dashboardService.GetDashboardAsync(
-                selectedDate, category, HttpContext?.RequestAborted ?? CancellationToken.None));
+                start, end, category, HttpContext?.RequestAborted ?? CancellationToken.None));
+        }
+
+        // GET: /api/Data/dashboard/machines
+        // 返回 DataLatest 中当前所有机台（含区域/状态/当前任务），供区域分组页使用
+        [HttpGet("dashboard/machines")]
+        public async Task<IActionResult> GetMachines()
+        {
+            var machines = await _context.DataLatest
+                .AsNoTracking()
+                .OrderBy(d => d.MachineName)
+                .Select(d => new
+                {
+                    d.MachineName,
+                    d.CountryCode,
+                    State = d.Data.State,
+                    TaskName = d.Data.TaskName,
+                    Speed = d.Data.Speed,
+                    SetSpeed = d.Data.SetSpeed,
+                    ProductQuantity = d.Data.ProductQuantity,
+                    d.Timestamp
+                })
+                .ToListAsync();
+
+            return Ok(machines);
+        }
+
+        private static bool TryParseRange(string startDate, string endDate, out DateOnly start, out DateOnly end)
+        {
+            start = default;
+            end = default;
+            return DateOnly.TryParseExact(startDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                       DateTimeStyles.None, out start)
+                   && DateOnly.TryParseExact(endDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                       DateTimeStyles.None, out end)
+                   && end >= start;
         }
 
         /// <summary>

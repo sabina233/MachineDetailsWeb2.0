@@ -67,7 +67,7 @@ public class ProductionDashboardServiceTests
                 MachineName = "RFID-801",
                 Timestamp = day.AddHours(8),
                 Message = "",
-                CountryCode = "",
+                CountryCode = "US",
                 Data = new NestedData { State = 1, TaskName = "A", FileName = "", ProductQuantity = 100 }
             },
             new DataRecordModel
@@ -78,16 +78,28 @@ public class ProductionDashboardServiceTests
                 CountryCode = "",
                 Data = new NestedData { State = 1, TaskName = "A", FileName = "", ProductQuantity = 999 }
             });
+        db.DataLatest.Add(new DataModel
+        {
+            MachineName = "RFID-601",
+            Timestamp = day.AddHours(11),
+            Message = "",
+            CountryCode = "CN",
+            Data = new DataDetails { State = 1, TaskName = "A", FileName = "", ProductQuantity = 25 }
+        });
         await db.SaveChangesAsync();
 
         var service = new ProductionDashboardService(db);
-        var result = await service.GetDashboardAsync(new DateOnly(2026, 8, 3), "roll", default);
+        var result = await service.GetDashboardAsync(new DateOnly(2026, 8, 3), new DateOnly(2026, 8, 3), "roll", default);
 
         Assert.Equal(25, result.Roll.TotalQuantity); // max(10,20) for A + 5 for B
         Assert.Equal(1, result.Roll.MachineCount);
         Assert.Single(result.Roll.Machines);
         Assert.Equal("RFID-601", result.Roll.Machines[0].MachineName);
         Assert.Equal(25, result.Roll.Machines[0].ProductQuantity);
+        Assert.Equal("CN", result.Roll.Machines[0].CountryCode); // 地区取自 DataLatest
+
+        var single = await service.GetDashboardAsync(new DateOnly(2026, 8, 3), new DateOnly(2026, 8, 3), "single", default);
+        Assert.Equal("US", single.Single.Machines[0].CountryCode); // 无 DataLatest 时回退到记录地区
     }
 
     [Fact]
@@ -131,10 +143,41 @@ public class ProductionDashboardServiceTests
         await db.SaveChangesAsync();
 
         var service = new ProductionDashboardService(db);
-        var result = await service.GetZplDailySummaryAsync(new DateOnly(2026, 8, 3), default);
+        var result = await service.GetZplDailySummaryAsync(new DateOnly(2026, 8, 3), new DateOnly(2026, 8, 3), default);
 
         Assert.Equal(70, result.TotalQuantity); // 30 (latest U1/O1) + 40 (U2/O2)
         Assert.Equal(2, result.UserCount);
+    }
+
+    [Fact]
+    public async Task GetDashboardAsync_SupportsDateRange()
+    {
+        var db = CreateDb();
+        db.DataRecords.AddRange(
+            new DataRecordModel
+            {
+                MachineName = "RFID-601",
+                Timestamp = new DateTime(2026, 8, 3, 8, 0, 0),
+                Message = "",
+                CountryCode = "CN",
+                Data = new NestedData { State = 1, TaskName = "A", FileName = "", ProductQuantity = 10 }
+            },
+            new DataRecordModel
+            {
+                MachineName = "RFID-601",
+                Timestamp = new DateTime(2026, 8, 4, 8, 0, 0),
+                Message = "",
+                CountryCode = "CN",
+                Data = new NestedData { State = 1, TaskName = "A", FileName = "", ProductQuantity = 20 }
+            });
+        await db.SaveChangesAsync();
+
+        var service = new ProductionDashboardService(db);
+        var result = await service.GetDashboardAsync(
+            new DateOnly(2026, 8, 3), new DateOnly(2026, 8, 4), "roll", default);
+
+        Assert.Equal(20, result.Roll.TotalQuantity); // 跨天区间内同一任务取最大产量
+        Assert.Equal(600, result.Roll.ActiveSeconds); // 08-03 08:00 -> 08-04 08:00 间隔 86400 秒按 600 秒上限计
     }
 
     private static DataContext CreateDb()
