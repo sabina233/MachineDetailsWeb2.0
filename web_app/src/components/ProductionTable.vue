@@ -66,11 +66,11 @@ function formatTs(timestamp) {
             class="table-row"
             @click="emit('row-click', row)"
           >
-            <td>{{ row.userName }}</td>
-            <td>{{ row.orderNo }}</td>
-            <td>{{ row.quantity }}</td>
+            <td style="font-weight: 600; color: var(--navy);">{{ row.userName }}</td>
+            <td><span class="category-tag">{{ row.orderNo }}</span></td>
+            <td style="font-weight: 700; color: var(--navy);">{{ row.quantity }}</td>
             <td>{{ row.region || '-' }}</td>
-            <td>{{ formatTs(row.timestamp) }}</td>
+            <td style="color: var(--muted);">{{ formatTs(row.timestamp) }}</td>
           </tr>
         </template>
         <template v-else>
@@ -80,8 +80,8 @@ function formatTs(timestamp) {
             class="table-row"
             @click="emit('row-click', row)"
           >
-            <td>{{ row.machineName }}</td>
-            <td>{{ row.productQuantity }}</td>
+            <td style="font-weight: 700; color: var(--navy);">{{ row.machineName }}</td>
+            <td style="font-weight: 750; color: var(--navy);">{{ row.productQuantity }}</td>
             <td>{{ formatSeconds(row.activeSeconds) }}</td>
             <td>
               <div class="capacity-cell">
@@ -96,14 +96,15 @@ function formatTs(timestamp) {
             </td>
             <td>
               <span class="status" :class="row.state === 1 ? 'status--on' : 'status--off'">
+                <span class="status-dot" :class="{ 'status-dot--pulse': row.state === 1 }"></span>
                 {{ row.state === 1 ? '开启' : '关闭' }}
               </span>
             </td>
-            <td>{{ formatTs(row.timestamp) }}</td>
+            <td style="color: var(--muted);">{{ formatTs(row.timestamp) }}</td>
           </tr>
         </template>
         <tr v-if="!rows.length">
-          <td colspan="5" class="empty">暂无数据</td>
+          <td :colspan="category === 'zpl' ? 5 : 6" class="empty">暂无数据</td>
         </tr>
       </tbody>
     </table>

@@ -63,18 +63,26 @@ onMounted(load)
 <template>
   <div class="page fade-up" data-test="liandian-list">
     <header class="topbar">
-      <button type="button" class="btn btn-ghost" @click="router.push('/dashboard')">返回看板</button>
-      <h1>联点机台 · 区域</h1>
+      <button type="button" class="btn btn-ghost" @click="router.push('/dashboard')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        返回看板
+      </button>
+      <h1>联点机台 · 区域概览</h1>
+      <button type="button" class="btn" @click="load">刷新</button>
     </header>
+
     <p v-if="error" class="error">{{ error }}</p>
 
+    <!-- 区域网格卡片 -->
     <div v-if="regions.length" class="region-grid">
       <button
         v-for="(region, index) in regions"
         :key="region.code"
         type="button"
         class="region-card card fade-up"
-        :style="{ animationDelay: index * 60 + 'ms' }"
+        :style="{ animationDelay: `${index * 60}ms` }"
         @click="openRegion(region.code)"
       >
         <span class="region-card__icon">
@@ -90,21 +98,21 @@ onMounted(load)
             {{ region.roll.length + region.single.length + region.other.length }} 台机台
           </span>
           <span v-if="region.roll.length" class="region-card__group">
-            <span class="region-card__group-label">卷状</span>
+            <span class="region-card__group-label">卷状 ({{ region.roll.length }})</span>
             <span class="region-card__names">{{ region.roll.map((m) => m.machineName).join('、') }}</span>
           </span>
           <span v-if="region.single.length" class="region-card__group">
-            <span class="region-card__group-label">单片</span>
+            <span class="region-card__group-label">单片 ({{ region.single.length }})</span>
             <span class="region-card__names">{{ region.single.map((m) => m.machineName).join('、') }}</span>
           </span>
           <span v-if="region.other.length" class="region-card__group">
-            <span class="region-card__group-label">其他</span>
+            <span class="region-card__group-label">其他 ({{ region.other.length }})</span>
             <span class="region-card__names">{{ region.other.map((m) => m.machineName).join('、') }}</span>
           </span>
         </span>
         <span class="region-card__arrow">→</span>
       </button>
     </div>
-    <p v-else-if="!error" class="empty-note">暂无区域数据</p>
+    <p v-else-if="!error" class="empty-note card">暂无区域数据</p>
   </div>
 </template>

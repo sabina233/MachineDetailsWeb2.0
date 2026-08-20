@@ -18,9 +18,9 @@ const valueLabels = {
         }
         ctx.save()
         ctx.fillStyle = '#0F3D66'
-        ctx.font = "600 11px -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif"
+        ctx.font = "600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif"
         ctx.textAlign = 'center'
-        ctx.fillText(String(value), bar.x, bar.y - 6)
+        ctx.fillText(String(value), bar.x, bar.y - 7)
         ctx.restore()
       })
     })
@@ -47,6 +47,12 @@ function render() {
   if (chart) {
     chart.destroy()
   }
+
+  // 创建柱状图渐变填充
+  const gradient = ctx.createLinearGradient(0, 0, 0, 240)
+  gradient.addColorStop(0, '#0A84FF')
+  gradient.addColorStop(1, '#60A5FA')
+
   chart = new Chart(ctx, {
     type: 'bar',
     plugins: [valueLabels],
@@ -56,22 +62,46 @@ function render() {
         {
           label: props.label,
           data: props.values,
-          backgroundColor: '#0A84FF',
-          borderRadius: 6,
-          maxBarThickness: 34
+          backgroundColor: gradient,
+          hoverBackgroundColor: '#0070e0',
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 36
         }
       ]
     },
-      options: {
+    options: {
       responsive: true,
       maintainAspectRatio: false,
-      layout: { padding: { top: 18 } },
+      layout: { padding: { top: 22, bottom: 4 } },
       plugins: {
-        legend: { labels: { color: '#475569' } }
+        legend: {
+          labels: {
+            color: '#475569',
+            font: { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", weight: '600' }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.88)',
+          padding: 10,
+          cornerRadius: 8,
+          titleFont: { size: 12, weight: 'bold' },
+          bodyFont: { size: 12 }
+        }
       },
       scales: {
-        x: { grid: { color: '#EFF3F9' }, ticks: { color: '#64748B' } },
-        y: { grid: { color: '#EFF3F9' }, ticks: { color: '#64748B' } }
+        x: {
+          grid: { color: 'rgba(226, 232, 240, 0.6)' },
+          ticks: { color: '#64748B', font: { size: 11 } }
+        },
+        y: {
+          grid: { color: 'rgba(226, 232, 240, 0.6)' },
+          ticks: { color: '#64748B', font: { size: 11 } }
+        }
+      },
+      animation: {
+        duration: 500,
+        easing: 'easeOutQuart'
       }
     }
   })
@@ -87,7 +117,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="chart card" data-test="trend-chart">
+  <div class="chart card fade-up" data-test="trend-chart">
     <canvas ref="canvas"></canvas>
   </div>
 </template>

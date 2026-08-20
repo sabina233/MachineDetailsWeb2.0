@@ -5,6 +5,8 @@ import { machineApi } from '../services/api'
 import { filters } from '../services/filterStore'
 import TrendChart from '../components/TrendChart.vue'
 import DateRangeFilter from '../components/DateRangeFilter.vue'
+import MachineImage from '../components/MachineImage.vue'
+import { getMachineCategoryName } from '../config/machineImages'
 
 const route = useRoute()
 const router = useRouter()
@@ -89,16 +91,26 @@ onMounted(load)
 <template>
   <div class="page fade-up" data-test="liandian-detail">
     <header class="topbar">
-      <button type="button" class="btn btn-ghost" @click="goBack">返回机台</button>
-      <h1>机台详情 · {{ machineName }}</h1>
+      <button type="button" class="btn btn-ghost" @click="goBack">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        返回机台
+      </button>
+      <h1>
+        机台详情 · {{ machineName }}
+        <span class="category-tag">{{ getMachineCategoryName(machineName) }}</span>
+      </h1>
       <DateRangeFilter
         :start="filters.range.start"
         :end="filters.range.end"
         @query="onRange"
       />
     </header>
+
     <p v-if="error" class="error">{{ error }}</p>
 
+    <!-- 机台状态与指标卡片 -->
     <section class="stats-row">
       <div class="stat-card card">
         <span class="stat-card__label">当前任务</span>
@@ -109,7 +121,9 @@ onMounted(load)
           v-if="current"
           class="status-pill"
           :class="current.state === 1 ? 'status-pill--on' : 'status-pill--off'"
+          style="align-self: flex-start;"
         >
+          <span class="status-dot" :class="{ 'status-dot--pulse': current.state === 1 }"></span>
           {{ current.state === 1 ? '生产中' : '已停机' }}
         </span>
         <span class="stat-card__sub">
@@ -119,7 +133,7 @@ onMounted(load)
       <div class="stat-card card">
         <span class="stat-card__label">总产量</span>
         <span class="stat-card__value">{{ totalQuantity }}</span>
-        <span class="stat-card__sub">{{ history.length }} 个订单任务</span>
+        <span class="stat-card__sub">{{ history.length }} 个订单任务累计</span>
       </div>
       <div class="stat-card card">
         <span class="stat-card__label">平均产能</span>
@@ -128,43 +142,67 @@ onMounted(load)
       </div>
     </section>
 
-    <section class="card">
-      <h2 class="card__title">订单产量趋势</h2>
+    <!-- 订单产量趋势图 -->
+    <section class="card fade-up">
+      <h2 class="card__title">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+        订单产量趋势
+      </h2>
       <TrendChart :labels="orderChart.labels" :values="orderChart.values" label="产量" />
     </section>
 
-    <section class="card">
-      <h2 class="card__title">品牌产量</h2>
+    <!-- 品牌产量趋势图 -->
+    <section class="card fade-up">
+      <h2 class="card__title">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+        品牌产量
+      </h2>
       <TrendChart :labels="brandChart.labels" :values="brandChart.values" label="产量" />
     </section>
 
-    <section class="card">
-      <h2 class="card__title">订单历史</h2>
-      <table class="production-table" data-test="history-table">
-        <thead>
-          <tr>
-            <th>任务</th>
-            <th>开始时间</th>
-            <th>结束时间</th>
-            <th>产量</th>
-            <th>产能</th>
-            <th>时长</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in history" :key="row.taskName">
-            <td>{{ row.taskName }}</td>
-            <td>{{ formatTs(row.startTime) }}</td>
-            <td>{{ formatTs(row.endTime) }}</td>
-            <td>{{ row.productQuantity }}</td>
-            <td>{{ row.unitsPerHour ?? '—' }}</td>
-            <td>{{ row.durationHours ? `${row.durationHours.toFixed(1)} 小时` : '—' }}</td>
-          </tr>
-          <tr v-if="!history.length">
-            <td colspan="6" class="empty">暂无数据</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- 订单历史表格 -->
+    <section class="card fade-up">
+      <h2 class="card__title">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        订单历史
+      </h2>
+      <div class="table-wrap">
+        <table class="production-table" data-test="history-table">
+          <thead>
+            <tr>
+              <th>任务</th>
+              <th>开始时间</th>
+              <th>结束时间</th>
+              <th>产量</th>
+              <th>产能</th>
+              <th>时长</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in history" :key="row.taskName">
+              <td style="font-weight: 650; color: var(--navy);">{{ row.taskName }}</td>
+              <td>{{ formatTs(row.startTime) }}</td>
+              <td>{{ formatTs(row.endTime) }}</td>
+              <td style="font-weight: 750; color: var(--navy);">{{ row.productQuantity }}</td>
+              <td>{{ row.unitsPerHour ?? '—' }}</td>
+              <td>{{ row.durationHours ? `${row.durationHours.toFixed(1)} 小时` : '—' }}</td>
+            </tr>
+            <tr v-if="!history.length">
+              <td colspan="6" class="empty">暂无历史订单数据</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   </div>
 </template>

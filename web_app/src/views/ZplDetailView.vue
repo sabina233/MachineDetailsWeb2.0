@@ -69,9 +69,14 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="page" data-test="zpl-detail">
+  <div class="page fade-up" data-test="zpl-detail">
     <header class="topbar">
-      <button type="button" class="btn btn-ghost" @click="router.push('/zpl')">返回列表</button>
+      <button type="button" class="btn btn-ghost" @click="router.push('/zpl')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        返回列表
+      </button>
       <h1>ZPL 用户详情 · {{ userName }}</h1>
       <DateRangeFilter
         :start="filters.range.start"
@@ -79,48 +84,73 @@ onMounted(load)
         @query="onRange"
       />
     </header>
+
     <p v-if="error" class="error">{{ error }}</p>
 
-    <section class="card">
-      <h2>日结案总产量</h2>
+    <!-- 日结案总产量 -->
+    <section class="card fade-up">
+      <h2 class="card__title">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+        日结案总产量
+      </h2>
       <div class="summary-total__value">{{ dailyTotal }}</div>
     </section>
 
-    <section class="card">
-      <h2>每日订单趋势</h2>
+    <!-- 每日订单趋势 -->
+    <section class="card fade-up">
+      <h2 class="card__title">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+        每日订单趋势
+      </h2>
       <TrendChart :labels="trend.labels" :values="trend.values" label="订单数" />
     </section>
 
-    <section class="card">
-      <h2>历史记录</h2>
-      <table class="production-table" data-test="zpl-history-table">
-        <thead>
-          <tr>
-            <th>订单号</th>
-            <th>区域</th>
-            <th>开始时间</th>
-            <th>结束时间</th>
-            <th>时长</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in rows" :key="row.orderNo">
-            <td>{{ row.orderNo }}</td>
-            <td>{{ row.region || '-' }}</td>
-            <td>{{ formatTs(row.startTime) }}</td>
-            <td>{{ formatTs(row.endTime) }}</td>
-            <td>{{ row.duration }}</td>
-          </tr>
-          <tr v-if="!rows.length">
-            <td colspan="5" class="empty">暂无数据</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- 历史记录 -->
+    <section class="card fade-up">
+      <h2 class="card__title">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        历史记录
+      </h2>
+      <div class="table-wrap">
+        <table class="production-table" data-test="zpl-history-table">
+          <thead>
+            <tr>
+              <th>订单号</th>
+              <th>区域</th>
+              <th>开始时间</th>
+              <th>结束时间</th>
+              <th>时长</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in rows" :key="row.orderNo">
+              <td style="font-weight: 650; color: var(--navy);">{{ row.orderNo }}</td>
+              <td>{{ row.region || '-' }}</td>
+              <td>{{ formatTs(row.startTime) }}</td>
+              <td>{{ formatTs(row.endTime) }}</td>
+              <td>{{ row.duration }}</td>
+            </tr>
+            <tr v-if="!rows.length">
+              <td colspan="5" class="empty">暂无数据</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <div class="pager">
         <button type="button" class="btn btn-ghost" :disabled="page <= 1" @click="changePage(page - 1)">
           上一页
         </button>
-        <span>第 {{ page }} / {{ totalPages }} 页</span>
+        <span style="font-weight: 600;">第 {{ page }} / {{ totalPages }} 页</span>
         <button
           type="button"
           class="btn btn-ghost"
