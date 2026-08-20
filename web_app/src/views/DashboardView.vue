@@ -69,10 +69,12 @@ onBeforeUnmount(() => clearInterval(timer))
 
 <template>
   <div class="dashboard" data-test="dashboard">
-    <header class="topbar">
-      <h1>生产看板</h1>
-      <div class="topbar__actions">
+    <header class="topbar topbar--stack">
+      <div class="topbar__row">
+        <h1>生产看板</h1>
         <DateRangeFilter :start="filters.range.start" :end="filters.range.end" @query="onRange" />
+      </div>
+      <div class="topbar__row topbar__row--actions">
         <button type="button" class="btn" @click="load">刷新</button>
         <button type="button" class="btn btn-ghost" @click="signOut">退出登录</button>
       </div>

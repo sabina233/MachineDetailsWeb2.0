@@ -27,10 +27,20 @@ async function load() {
   error.value = ''
   try {
     const all = await machineApi.getMachines()
-    machines.value = all.filter((m) => (m.countryCode || '') === countryCode.value)
+    machines.value = all
+      .filter((m) => (m.countryCode || '') === countryCode.value)
+      .sort((a, b) => categoryRank(a.machineName) - categoryRank(b.machineName))
   } catch {
     error.value = '加载失败，请重试'
   }
+}
+
+function categoryRank(name) {
+  return /^RFID-6/i.test(name || '') ? 0 : /^RFID-8/i.test(name || '') ? 1 : 2
+}
+
+function categoryName(name) {
+  return /^RFID-6/i.test(name || '') ? '卷状' : /^RFID-8/i.test(name || '') ? '单片' : '其他'
 }
 
 const totalQuantity = computed(() =>
@@ -44,7 +54,7 @@ function formatTs(timestamp) {
 function openDetail(machine) {
   router.push({
     path: `/liandian/${route.params.category || 'roll'}/detail`,
-    query: { machineName: machine.machineName }
+    query: { machineName: machine.machineName, countryCode: countryCode.value }
   })
 }
 
@@ -88,6 +98,7 @@ watch(
         <thead>
           <tr>
             <th>机台</th>
+            <th>类别</th>
             <th>状态</th>
             <th>当前任务</th>
             <th>速度</th>
@@ -104,6 +115,9 @@ watch(
           >
             <td>{{ machine.machineName }}</td>
             <td>
+              <span class="category-tag">{{ categoryName(machine.machineName) }}</span>
+            </td>
+            <td>
               <span class="status" :class="machine.state === 1 ? 'status--on' : 'status--off'">
                 {{ machine.state === 1 ? '开启' : '关闭' }}
               </span>
@@ -114,7 +128,7 @@ watch(
             <td>{{ formatTs(machine.timestamp) }}</td>
           </tr>
           <tr v-if="!machines.length">
-            <td colspan="6" class="empty">该区域暂无对应机台</td>
+            <td colspan="7" class="empty">该区域暂无对应机台</td>
           </tr>
         </tbody>
       </table>

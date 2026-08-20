@@ -101,6 +101,29 @@ body {
   letter-spacing: 0.01em;
 }
 
+.topbar--stack {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.topbar__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.topbar__row--actions {
+  justify-content: flex-end;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .btn {
   background: var(--primary);
   color: #ffffff;
@@ -366,6 +389,16 @@ body {
   color: var(--off);
 }
 
+.category-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
 /* ===== 统计卡（区域页 / 详情页）===== */
 .stats-row {
   display: grid;
@@ -470,6 +503,18 @@ body {
   flex-direction: column;
   gap: 2px;
   color: var(--muted);
+  font-size: 12px;
+}
+
+.region-card__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.region-card__group-label {
+  color: var(--navy);
+  font-weight: 650;
   font-size: 12px;
 }
 

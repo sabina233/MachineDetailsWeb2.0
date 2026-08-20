@@ -41,6 +41,16 @@ function onRange({ start, end }) {
   load()
 }
 
+function goBack() {
+  if (route.query.countryCode) {
+    router.push(
+      `/liandian/${route.params.category || 'roll'}/region/${encodeURIComponent(route.query.countryCode)}`
+    )
+  } else {
+    router.push(`/liandian/${route.params.category || 'roll'}`)
+  }
+}
+
 const totalQuantity = computed(() =>
   history.value.reduce((sum, row) => sum + (row.productQuantity || 0), 0)
 )
@@ -79,13 +89,7 @@ onMounted(load)
 <template>
   <div class="page fade-up" data-test="liandian-detail">
     <header class="topbar">
-      <button
-        type="button"
-        class="btn btn-ghost"
-        @click="router.push(`/liandian/${route.params.category}`)"
-      >
-        返回区域
-      </button>
+      <button type="button" class="btn btn-ghost" @click="goBack">返回机台</button>
       <h1>机台详情 · {{ machineName }}</h1>
       <DateRangeFilter
         :start="filters.range.start"

@@ -22,7 +22,7 @@ describe('LiandianListView', () => {
     machineApi.getMachines.mockResolvedValue([
       { machineName: 'RFID-601', countryCode: 'CN', state: 1, taskName: 'A100', productQuantity: 240 },
       { machineName: 'RFID-602', countryCode: 'US', state: 1, taskName: 'C300', productQuantity: 100 },
-      { machineName: 'RFID-801', countryCode: 'JP', state: 1, taskName: 'S100', productQuantity: 45 }
+      { machineName: 'RFID-801', countryCode: 'CN', state: 1, taskName: 'S100', productQuantity: 45 }
     ])
 
     const router = createRouter({ history: createMemoryHistory(), routes })
@@ -39,9 +39,10 @@ describe('LiandianListView', () => {
 
   it('groups all DataLatest machines into region cards by countryCode', () => {
     expect(machineApi.getMachines).toHaveBeenCalled()
-    expect(wrapper.findAll('.region-card')).toHaveLength(3)
+    expect(wrapper.findAll('.region-card')).toHaveLength(2)
     expect(wrapper.text()).toContain('中国')
     expect(wrapper.text()).toContain('美国')
-    expect(wrapper.text()).toContain('日本')
+    expect(wrapper.text()).toContain('卷状')
+    expect(wrapper.text()).toContain('单片')
   })
 })

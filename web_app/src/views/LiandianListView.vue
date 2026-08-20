@@ -29,16 +29,28 @@ async function load() {
   }
 }
 
+function classify(name) {
+  if (/^RFID-6/i.test(name || '')) {
+    return 'roll'
+  }
+  if (/^RFID-8/i.test(name || '')) {
+    return 'single'
+  }
+  return 'other'
+}
+
 const regions = computed(() => {
   const map = new Map()
   for (const machine of machines.value) {
     const code = machine.countryCode || '未知'
     if (!map.has(code)) {
-      map.set(code, { code, machines: [] })
+      map.set(code, { code, roll: [], single: [], other: [] })
     }
-    map.get(code).machines.push(machine)
+    map.get(code)[classify(machine.machineName)].push(machine)
   }
-  return [...map.values()].sort((a, b) => b.machines.length - a.machines.length)
+  return [...map.values()].sort(
+    (a, b) => b.roll.length + b.single.length + b.other.length - (a.roll.length + a.single.length + a.other.length)
+  )
 })
 
 function openRegion(code) {
@@ -74,8 +86,21 @@ onMounted(load)
         <span class="region-card__name">{{ regionNames[region.code] || region.code }}</span>
         <span class="region-card__code">{{ region.code }}</span>
         <span class="region-card__machines">
-          <span class="region-card__count">{{ region.machines.length }} 台机台</span>
-          <span class="region-card__names">{{ region.machines.map((m) => m.machineName).join('、') }}</span>
+          <span class="region-card__count">
+            {{ region.roll.length + region.single.length + region.other.length }} 台机台
+          </span>
+          <span v-if="region.roll.length" class="region-card__group">
+            <span class="region-card__group-label">卷状</span>
+            <span class="region-card__names">{{ region.roll.map((m) => m.machineName).join('、') }}</span>
+          </span>
+          <span v-if="region.single.length" class="region-card__group">
+            <span class="region-card__group-label">单片</span>
+            <span class="region-card__names">{{ region.single.map((m) => m.machineName).join('、') }}</span>
+          </span>
+          <span v-if="region.other.length" class="region-card__group">
+            <span class="region-card__group-label">其他</span>
+            <span class="region-card__names">{{ region.other.map((m) => m.machineName).join('、') }}</span>
+          </span>
         </span>
         <span class="region-card__arrow">→</span>
       </button>
