@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using web_api2022.Data;
 using Microsoft.AspNetCore.SignalR;
@@ -260,9 +260,10 @@ namespace web_api2022.Controllers
                         .OrderBy(h => h.StartTime) // 按照开始时间排序
                         .ToList(),
                     ProductQuantity = _context.DataRecords
-                        .Where(r => r.MachineName == machineName)
-                        .Distinct()
-                        .Sum(r => r.Data.ProductQuantity)
+                        .Where(r => r.MachineName == machineName && r.Timestamp >= startDate && r.Timestamp < endDate && !string.IsNullOrEmpty(r.Data.TaskName))
+                        .GroupBy(r => r.Data.TaskName)
+                        .Select(g => g.Max(r => r.Data.ProductQuantity))
+                        .Sum()
                 })
                 .FirstOrDefault(); // 获取机器数据
 
@@ -286,9 +287,11 @@ namespace web_api2022.Controllers
                     {
                         d.MachineName,
                         d.Timestamp,
-                        d.Data.TaskName,
-                        d.Data.Speed,
-                        d.Data.SetSpeed
+                        State = d.Data.State,
+                        TaskName = d.Data.TaskName,
+                        Speed = d.Data.Speed,
+                        SetSpeed = d.Data.SetSpeed,
+                        ProductQuantity = d.Data.ProductQuantity
                     })
                     .OrderByDescending(d => d.Timestamp) // 按照时间戳降序排序
                     .ToList();
@@ -323,6 +326,7 @@ namespace web_api2022.Controllers
                     WHERE MachineName = @machineName 
                       AND Timestamp >= @startDate 
                       AND Timestamp <= @endDate
+                      AND TaskName IS NOT NULL AND TaskName <> ''
                     GROUP BY TaskName
                     ORDER BY MIN(Timestamp)";
 
@@ -341,10 +345,9 @@ namespace web_api2022.Controllers
                     var endTime = reader.GetDateTime(2);
                     var durationSeconds = reader.GetInt32(3);
                     var durationHours = Math.Round(durationSeconds / 3600.0, 4);
-                    var safeDurationHours = Math.Max(durationSeconds / 3600.0, 1.0 / 3600); // 最少1秒
                     var productQuantity = reader.GetInt32(4);
-                    var unitsPerHour = safeDurationHours > 0
-                        ? Math.Round(productQuantity / safeDurationHours, 2)
+                    var unitsPerHour = durationSeconds > 0
+                        ? Math.Round(productQuantity / (durationSeconds / 3600.0), 2)
                         : 0;
 
                     result.Add(new
@@ -369,7 +372,7 @@ namespace web_api2022.Controllers
 
 
         /// <summary>
-        /// 获取订单生产图表数据（服务端 GroupBy）
+        /// 获取订单生产图表数据（服务端 GroupBy，按任务去重取最大产量后按日汇总）
         /// </summary>
         [HttpGet("OrderProductionChart")]
         public async Task<IActionResult> GetOrderProductionChart(string machineName, DateTime? startDate, DateTime? endDate)
@@ -380,15 +383,24 @@ namespace web_api2022.Controllers
                 var end = endDate ?? DateTime.UtcNow.AddDays(1);
 
                 var sql = @"
+                    WITH DailyTasks AS (
+                        SELECT 
+                            CONVERT(DATE, Timestamp) AS [Date],
+                            TaskName,
+                            MAX(ProductQuantity) AS TaskQuantity
+                        FROM DataRecords
+                        WHERE MachineName = @machineName 
+                          AND Timestamp >= @startDate 
+                          AND Timestamp <= @endDate
+                          AND TaskName IS NOT NULL AND TaskName <> ''
+                        GROUP BY CONVERT(DATE, Timestamp), TaskName
+                    )
                     SELECT 
-                        CONVERT(DATE, Timestamp) AS [Date],
-                        COUNT(DISTINCT TaskName) AS OrderCount,
-                        SUM(DISTINCT ProductQuantity) AS ProductQuantity
-                    FROM DataRecords
-                    WHERE MachineName = @machineName 
-                      AND Timestamp >= @startDate 
-                      AND Timestamp <= @endDate
-                    GROUP BY CONVERT(DATE, Timestamp)
+                        [Date],
+                        COUNT(TaskName) AS OrderCount,
+                        ISNULL(SUM(TaskQuantity), 0) AS ProductQuantity
+                    FROM DailyTasks
+                    GROUP BY [Date]
                     ORDER BY [Date]";
 
                 using var conn = new SqlConnection(_connectionString);
@@ -419,57 +431,7 @@ namespace web_api2022.Controllers
         }
 
         /// <summary>
-        /// 获取指定日期的生产数据汇总
-        /// </summary>
-        /// <param name="machineName"></param>
-        /// <param name="dailydate"></param>
-        /// <returns></returns>
-        //    [HttpGet("BrandProductionChart")]
-        //    public IActionResult GetFilenameSummary(string machineName, DateTime? startDate, DateTime? endDate)
-        //    {
-        //        try
-        //        {
-        //            startDate ??= DateTime.UtcNow.AddDays(-1); // 默认最近 1 天
-        //            endDate ??= DateTime.UtcNow;
-        //            // 从数据库加载数据
-        //            var data = _context.DataRecords
-        //                .Where(d => d.MachineName == machineName && d.Timestamp >= startDate && d.Timestamp < endDate) // 排除空值
-        //                .Select(d => new
-        //                {
-        //                    FileName = d.Data.FileName,
-        //                    ProductQuantity = d.Data.ProductQuantity
-        //                })
-        //                .ToList();
-
-        //            // 截取最后一个 '\' 后的前三位字符，并对 ProductQuantity 进行汇总
-        //            var result = data
-        //                .GroupBy(d =>
-        //                {
-        //                    var fileName = d.FileName;
-        //                    var lastPart = fileName.Substring(fileName.LastIndexOf("\\") + 1); // 获取最后一部分
-        //                    return lastPart.Substring(0, 3); // 截取前三位
-        //                })
-        //                .Select(g => new
-        //                {
-        //                    //date = endDate.Value.ToString("yyyy-MM-dd"), // 日期
-        //                    Name = g.Key, // 文件名的前三位
-        //                    ProductQuantity = g.Select(d => d.ProductQuantity).Distinct().Sum()
-        //                })
-        //                .OrderBy(r => r.Name) // 按名称排序
-        //                .ToList();
-
-        //            return Ok(result);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            // 记录错误日志
-        //            Console.WriteLine($"Error in GetFilenameSummary API: {ex.Message}");
-        //            return StatusCode(500, new { message = "服务器内部错误" });
-        //        }
-        //    }
-
-        /// <summary>
-        /// 获取指定日期的生产数据汇总（服务端筛选+列投影，减少数据传输量）
+        /// 获取指定日期的品牌生产数据汇总（按任务去重取最大产量后按品牌前缀汇总）
         /// </summary>
         [HttpGet("BrandProductionChart")]
         public async Task<IActionResult> GetFilenameSummary(string machineName, DateTime? startDate, DateTime? endDate)
@@ -479,13 +441,18 @@ namespace web_api2022.Controllers
                 var start = startDate ?? DateTime.UtcNow;
                 var end = endDate ?? DateTime.UtcNow.AddDays(1);
 
-                // SQL 端做筛选和列投影，只取需要的两列
+                // SQL 端先按任务聚合，取每个任务的最终 FileName 和最大 ProductQuantity
                 var sql = @"
-                    SELECT FileName, ProductQuantity
+                    SELECT 
+                        TaskName,
+                        MAX(FileName) AS FileName,
+                        MAX(ProductQuantity) AS ProductQuantity
                     FROM DataRecords
                     WHERE MachineName = @machineName 
                       AND Timestamp >= @startDate 
-                      AND Timestamp < @endDate";
+                      AND Timestamp < @endDate
+                      AND TaskName IS NOT NULL AND TaskName <> ''
+                    GROUP BY TaskName";
 
                 using var conn = new SqlConnection(_connectionString);
                 await conn.OpenAsync();
@@ -494,30 +461,36 @@ namespace web_api2022.Controllers
                 cmd.Parameters.AddWithValue("@startDate", start);
                 cmd.Parameters.AddWithValue("@endDate", end);
 
-                var data = new List<(string FileName, int ProductQuantity)>();
+                var tasks = new List<(string TaskName, string FileName, int ProductQuantity)>();
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
-                    data.Add((
+                    tasks.Add((
                         reader.IsDBNull(0) ? "" : reader.GetString(0),
-                        reader.IsDBNull(1) ? 0 : reader.GetInt32(1)
+                        reader.IsDBNull(1) ? "" : reader.GetString(1),
+                        reader.IsDBNull(2) ? 0 : reader.GetInt32(2)
                     ));
                 }
 
-                // C# 端做品牌名称提取和分组（字符串逻辑复杂，不适合放 SQL）
-                var result = data
-                    .GroupBy(d =>
+                // C# 端按每个任务提取品牌并分组汇总
+                var result = tasks
+                    .GroupBy(t =>
                     {
-                        var fileName = d.FileName;
-                        var lastSlash = fileName.LastIndexOf("\\");
-                        var lastPart = lastSlash >= 0 ? fileName.Substring(lastSlash + 1) : fileName;
-                        var name = new string(lastPart.TakeWhile(char.IsLetter).ToArray());
-                        return name;
+                        var fileName = t.FileName;
+                        if (!string.IsNullOrEmpty(fileName))
+                        {
+                            var lastSlash = fileName.LastIndexOf("\\");
+                            var lastPart = lastSlash >= 0 ? fileName.Substring(lastSlash + 1) : fileName;
+                            var name = new string(lastPart.TakeWhile(char.IsLetter).ToArray());
+                            if (!string.IsNullOrEmpty(name)) return name;
+                        }
+                        var taskPrefix = new string((t.TaskName ?? "").TakeWhile(char.IsLetter).ToArray());
+                        return !string.IsNullOrEmpty(taskPrefix) ? taskPrefix : "OTHER";
                     })
                     .Select(g => new
                     {
                         Name = g.Key,
-                        ProductQuantity = g.Select(d => d.ProductQuantity).Distinct().Sum()
+                        ProductQuantity = g.Sum(t => t.ProductQuantity)
                     })
                     .OrderBy(r => r.Name)
                     .ToList();
