@@ -18,12 +18,23 @@ const regionNames = {
   CN: '中国',
   US: '美国',
   JP: '日本',
-  DE: '德国',
-  GB: '英国',
   FR: '法国',
   KR: '韩国',
-  IN: '印度',
-  VN: '越南'
+  VN: '越南',
+  GD: '广东',
+  HK: '香港',
+  TW: '台湾',
+  CB:'柬埔寨',
+  ID:'印尼',
+  TH:'泰国',
+  IND:'印度',
+  BD:'孟加拉',
+  PK:'巴基斯坦',
+  SLR:'斯里兰卡',
+  TK:'土耳其',
+  UK:'英国',
+  GER:'德国',
+  GT:'危地马拉'
 }
 
 const regionName = computed(() => regionNames[countryCode.value] || countryCode.value)
