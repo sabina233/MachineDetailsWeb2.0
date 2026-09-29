@@ -14,7 +14,7 @@ app.UseFileServer(new FileServerOptions
 {
     DefaultFilesOptions = { DefaultFileNames = { "Login.html" } }
 });
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 // Vue SPA 历史路由回退：/app/* 非文件路径统一返回应用入口
 app.MapFallbackToFile("/app/{*path:nonfile}", "app/index.html");
