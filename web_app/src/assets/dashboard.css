@@ -917,6 +917,45 @@ body {
   font-weight: 700;
 }
 
+.user-chip__action {
+  font-size: 10px;
+  color: var(--primary);
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.region-card__group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.region-card__hint {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.region-card__bottom-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 8px;
+  margin-top: 6px;
+  border-top: 1px dashed var(--line);
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.region-card:hover .region-card__bottom-hint {
+  color: var(--primary);
+}
+
 /* ===== 表格系统 ===== */
 .table-wrap {
   overflow-x: auto;

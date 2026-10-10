@@ -18,6 +18,10 @@ const props = defineProps({
   alt: {
     type: String,
     default: ''
+  },
+  customImage: {
+    type: String,
+    default: ''
   }
 })
 
@@ -29,10 +33,14 @@ const displayName = computed(() => props.name || getRegionName(cleanCode.value))
 const aliasCode = computed(() => regionCodeAliases[cleanCode.value] || null)
 
 // 首选图片路径
-const primaryImgUrl = computed(() => getRegionImage(cleanCode.value))
+const primaryImgUrl = computed(() => {
+  if (props.customImage) return props.customImage
+  return getRegionImage(cleanCode.value)
+})
 
 // 别名备用图片路径（例如 HP 优先找 HP.png，失败后可尝试 US.png）
 const aliasImgUrl = computed(() => {
+  if (props.customImage) return null
   if (!aliasCode.value) return null
   return getRegionImage(aliasCode.value)
 })
@@ -48,7 +56,7 @@ const currentImgUrl = computed(() => {
   return null
 })
 
-watch(() => props.code, () => {
+watch(() => [props.code, props.customImage], () => {
   hasPrimaryError.value = false
   hasAliasError.value = false
 })
@@ -79,7 +87,7 @@ function onImgError() {
 
     <!-- 优雅 SVG 矢量国旗/区域徽章 Fallback -->
     <div v-else class="region-flag-badge__fallback">
-      <!-- 中国 (CN) 标志性红金微标 -->
+      <!-- 中国 (CN / GD / HK / TW) -->
       <svg
         v-if="cleanCode === 'CN' || cleanCode === 'GD' || cleanCode === 'HK' || cleanCode === 'TW'"
         viewBox="0 0 40 28"
@@ -93,7 +101,7 @@ function onImgError() {
         <circle cx="16" cy="16" r="1.2" fill="#ffde00" />
       </svg>
 
-      <!-- 越南 (VN) 标志性金星红旗 -->
+      <!-- 越南 (VN) -->
       <svg
         v-else-if="cleanCode === 'VN'"
         viewBox="0 0 40 28"
@@ -123,6 +131,126 @@ function onImgError() {
         <circle cx="13" cy="11" r="1.2" fill="#ffffff" />
       </svg>
 
+      <!-- 菲律宾 (PH) -->
+      <svg
+        v-else-if="cleanCode === 'PH'"
+        viewBox="0 0 40 28"
+        class="flag-svg"
+      >
+        <rect width="40" height="14" rx="4" fill="#0038a8" />
+        <rect y="14" width="40" height="14" rx="4" fill="#ce1126" />
+        <polygon points="0,0 20,14 0,28" fill="#ffffff" />
+        <circle cx="7" cy="14" r="3" fill="#fcd116" />
+      </svg>
+
+      <!-- 印度尼西亚 (ID) -->
+      <svg
+        v-else-if="cleanCode === 'ID'"
+        viewBox="0 0 40 28"
+        class="flag-svg"
+      >
+        <rect width="40" height="14" rx="4" fill="#ff0000" />
+        <rect y="14" width="40" height="14" rx="4" fill="#ffffff" />
+      </svg>
+
+      <!-- 印度 (IN / IND) -->
+      <svg
+        v-else-if="cleanCode === 'IN' || cleanCode === 'IND'"
+        viewBox="0 0 40 28"
+        class="flag-svg"
+      >
+        <rect width="40" height="9.3" rx="4" fill="#ff9933" />
+        <rect y="9.3" width="40" height="9.3" fill="#ffffff" />
+        <rect y="18.6" width="40" height="9.4" rx="4" fill="#138808" />
+        <circle cx="20" cy="14" r="3.5" fill="none" stroke="#000080" stroke-width="1" />
+      </svg>
+
+      <!-- 孟加拉 (BD) -->
+      <svg
+        v-else-if="cleanCode === 'BD'"
+        viewBox="0 0 40 28"
+        class="flag-svg"
+      >
+        <rect width="40" height="28" rx="4" fill="#006a4e" />
+        <circle cx="18" cy="14" r="8" fill="#f42a41" />
+      </svg>
+
+      <!-- 巴基斯坦 (PK) -->
+      <svg
+        v-else-if="cleanCode === 'PK'"
+        viewBox="0 0 40 28"
+        class="flag-svg"
+      >
+        <rect width="40" height="28" rx="4" fill="#01411c" />
+        <rect width="10" height="28" rx="4" fill="#ffffff" />
+        <circle cx="25" cy="14" r="6" fill="#ffffff" />
+        <circle cx="27" cy="13" r="5" fill="#01411c" />
+        <polygon points="26,10 27,13 30,13 28,15 29,18 26,16 23,18 24,15 22,13 25,13" fill="#ffffff" />
+      </svg>
+
+      <!-- 柬埔寨 (KH / CB) -->
+      <svg
+        v-else-if="cleanCode === 'KH' || cleanCode === 'CB'"
+        viewBox="0 0 40 28"
+        class="flag-svg"
+      >
+        <rect width="40" height="7" rx="4" fill="#032ea1" />
+        <rect y="7" width="40" height="14" fill="#e00025" />
+        <rect y="21" width="40" height="7" rx="4" fill="#032ea1" />
+        <rect x="15" y="10" width="10" height="8" rx="1" fill="#ffffff" />
+      </svg>
+
+      <!-- 泰国 (TH) -->
+      <svg
+        v-else-if="cleanCode === 'TH'"
+        viewBox="0 0 40 28"
+        class="flag-svg"
+      >
+        <rect width="40" height="5" rx="4" fill="#a51931" />
+        <rect y="5" width="40" height="5" fill="#f4f5f8" />
+        <rect y="10" width="40" height="8" fill="#2d2a4a" />
+        <rect y="18" width="40" height="5" fill="#f4f5f8" />
+        <rect y="23" width="40" height="5" rx="4" fill="#a51931" />
+      </svg>
+
+      <!-- 土耳其 (TR / TK) -->
+      <svg
+        v-else-if="cleanCode === 'TR' || cleanCode === 'TK'"
+        viewBox="0 0 40 28"
+        class="flag-svg"
+      >
+        <rect width="40" height="28" rx="4" fill="#e30a17" />
+        <circle cx="17" cy="14" r="7" fill="#ffffff" />
+        <circle cx="19" cy="14" r="5.6" fill="#e30a17" />
+        <polygon points="23,14 26,15 24,12 26,10 23,11 21,9 22,12 20,14 23,13" fill="#ffffff" />
+      </svg>
+
+      <!-- 斯里兰卡 (LK / SLR) -->
+      <svg
+        v-else-if="cleanCode === 'LK' || cleanCode === 'SLR'"
+        viewBox="0 0 40 28"
+        class="flag-svg"
+      >
+        <rect width="40" height="28" rx="4" fill="#ffbe29" />
+        <rect x="4" y="4" width="7" height="20" fill="#00534e" />
+        <rect x="11" y="4" width="7" height="20" fill="#eb7400" />
+        <rect x="20" y="4" width="16" height="20" fill="#8d153a" />
+        <circle cx="28" cy="14" r="4" fill="#ffbe29" />
+      </svg>
+
+      <!-- 英国 (GB / UK) -->
+      <svg
+        v-else-if="cleanCode === 'GB' || cleanCode === 'UK'"
+        viewBox="0 0 40 28"
+        class="flag-svg"
+      >
+        <rect width="40" height="28" rx="4" fill="#012169" />
+        <path d="M0,0 L40,28 M40,0 L0,28" stroke="#ffffff" stroke-width="4" />
+        <path d="M0,0 L40,28 M40,0 L0,28" stroke="#c8102e" stroke-width="2" />
+        <path d="M20,0 V28 M0,14 H40" stroke="#ffffff" stroke-width="7" />
+        <path d="M20,0 V28 M0,14 H40" stroke="#c8102e" stroke-width="4" />
+      </svg>
+
       <!-- 日本 (JP) -->
       <svg
         v-else-if="cleanCode === 'JP'"
@@ -142,19 +270,6 @@ function onImgError() {
         <rect width="40" height="28" rx="4" fill="#ffce00" />
         <rect width="40" height="9.5" rx="3" fill="#000000" />
         <rect y="9.3" width="40" height="9.5" fill="#dd0000" />
-      </svg>
-
-      <!-- 英国 (GB / UK) -->
-      <svg
-        v-else-if="cleanCode === 'GB' || cleanCode === 'UK'"
-        viewBox="0 0 40 28"
-        class="flag-svg"
-      >
-        <rect width="40" height="28" rx="4" fill="#012169" />
-        <path d="M0,0 L40,28 M40,0 L0,28" stroke="#ffffff" stroke-width="4" />
-        <path d="M0,0 L40,28 M40,0 L0,28" stroke="#c8102e" stroke-width="2" />
-        <path d="M20,0 V28 M0,14 H40" stroke="#ffffff" stroke-width="7" />
-        <path d="M20,0 V28 M0,14 H40" stroke="#c8102e" stroke-width="4" />
       </svg>
 
       <!-- 法国 (FR) -->
