@@ -2,38 +2,13 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { machineApi } from '../services/api'
+import { regionNames } from '../config/regionImages'
+import RegionImage from '../components/RegionImage.vue'
 
 const route = useRoute()
 const router = useRouter()
 const machines = ref([])
 const error = ref('')
-
-const regionNames = {
-  CN: '中国',
-  US: '美国',
-  HP: '美国',
-  JP: '日本',
-  FR: '法国',
-  KR: '韩国',
-  VN: '越南',
-  GD: '广东',
-  HK: '香港',
-  TW: '台湾',
-  CB: '柬埔寨',
-  ID: '印尼',
-  TH: '泰国',
-  IN: '印度',
-  IND: '印度',
-  BD: '孟加拉',
-  PK: '巴基斯坦',
-  SLR: '斯里兰卡',
-  TK: '土耳其',
-  GB: '英国',
-  UK: '英国',
-  DE: '德国',
-  GER: '德国',
-  GT: '危地马拉'
-}
 
 async function load() {
   error.value = ''
@@ -100,14 +75,12 @@ onMounted(load)
         :style="{ animationDelay: `${index * 60}ms` }"
         @click="openRegion(region.code)"
       >
-        <span class="region-card__icon">
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
-        </span>
+        <div class="region-card__top">
+          <!-- 区域国旗/图片展示 -->
+          <RegionImage :code="region.code" :name="regionNames[region.code]" size="md" />
+          <span class="region-card__code">{{ region.code }}</span>
+        </div>
         <span class="region-card__name">{{ regionNames[region.code] || region.code }}</span>
-        <span class="region-card__code">{{ region.code }}</span>
         <span class="region-card__machines">
           <span class="region-card__count">
             {{ region.roll.length + region.single.length + region.other.length }} 台机台

@@ -3,7 +3,9 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { machineApi } from '../services/api'
 import MachineImage from '../components/MachineImage.vue'
+import RegionImage from '../components/RegionImage.vue'
 import { getMachineCategory, getMachineCategoryName } from '../config/machineImages'
+import { regionNames } from '../config/regionImages'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,33 +15,6 @@ const error = ref('')
 const searchQuery = ref('')
 const statusFilter = ref('all') // 'all' | 'on' | 'off'
 const categoryFilter = ref('all') // 'all' | 'roll' | 'single' | 'other'
-
-const regionNames = {
-  CN: '中国',
-  US: '美国',
-  HP: '美国',
-  JP: '日本',
-  FR: '法国',
-  KR: '韩国',
-  VN: '越南',
-  GD: '广东',
-  HK: '香港',
-  TW: '台湾',
-  CB: '柬埔寨',
-  ID: '印尼',
-  TH: '泰国',
-  IN: '印度',
-  IND: '印度',
-  BD: '孟加拉',
-  PK: '巴基斯坦',
-  SLR: '斯里兰卡',
-  TK: '土耳其',
-  GB: '英国',
-  UK: '英国',
-  DE: '德国',
-  GER: '德国',
-  GT: '危地马拉'
-}
 
 const regionName = computed(() => regionNames[countryCode.value] || countryCode.value)
 
@@ -124,7 +99,11 @@ watch(
         </svg>
         返回区域
       </button>
-      <h1>联点机台 · {{ regionName }} <span v-if="countryCode" class="region-card__code">{{ countryCode }}</span></h1>
+      <h1>
+        <RegionImage v-if="countryCode" :code="countryCode" :name="regionName" size="sm" />
+        联点机台 · {{ regionName }}
+        <span v-if="countryCode" class="region-card__code">{{ countryCode }}</span>
+      </h1>
       <button type="button" class="btn" @click="load">刷新状态</button>
     </header>
 

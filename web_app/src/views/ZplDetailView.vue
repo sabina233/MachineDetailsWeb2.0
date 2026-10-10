@@ -32,8 +32,14 @@ async function load({ start, end } = {}) {
     ])
     rows.value = history.data || []
     totalPages.value = history.totalPages || 1
-    const user = (daily.users || []).find((u) => u.userName === userName.value)
-    dailyTotal.value = user ? user.quantity : 0
+
+    // 忽略大小写匹配该用户的所有日结案汇总记录，合并其产量
+    const targetLower = (userName.value || '').trim().toLowerCase()
+    const matchedUsers = (daily.users || []).filter(
+      (u) => (u.userName || '').trim().toLowerCase() === targetLower
+    )
+    dailyTotal.value = matchedUsers.reduce((sum, u) => sum + (Number(u.quantity) || 0), 0)
+
     trend.value = buildTrend(rows.value)
   } catch {
     error.value = '加载失败，请重试'
@@ -65,17 +71,25 @@ function changePage(next) {
   load()
 }
 
+function goBack() {
+  if (window.history.state?.back) {
+    router.back()
+  } else {
+    router.push('/zpl/users')
+  }
+}
+
 onMounted(load)
 </script>
 
 <template>
   <div class="page fade-up" data-test="zpl-detail">
     <header class="topbar">
-      <button type="button" class="btn btn-ghost" @click="router.push('/zpl')">
+      <button type="button" class="btn btn-ghost" @click="goBack">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg>
-        返回列表
+        返回区域列表
       </button>
       <h1>ZPL 用户详情 · {{ userName }}</h1>
       <DateRangeFilter

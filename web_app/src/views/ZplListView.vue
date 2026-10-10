@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { dashboardApi } from '../services/api'
 import { filters } from '../services/filterStore'
+import { deduplicateUsers } from '../utils/userUtils'
 import SummaryTotal from '../components/SummaryTotal.vue'
 import ProductionTable from '../components/ProductionTable.vue'
 import TrendChart from '../components/TrendChart.vue'
@@ -27,8 +28,17 @@ function onRange({ start, end }) {
   load()
 }
 
-function openDetail(user) {
-  router.push({ path: '/zpl/detail', query: { userName: user.userName } })
+// 忽略大小写去重并合并产量后的用户列表
+const distinctUsers = computed(() => {
+  return deduplicateUsers(summary.value?.users || [])
+})
+
+// 点击用户列表行时，先进入按区域区分的 userlistview 页面
+function openUserList(user) {
+  router.push({
+    path: '/zpl/users',
+    query: user?.region ? { region: user.region } : undefined
+  })
 }
 
 onMounted(load)
@@ -70,23 +80,34 @@ onMounted(load)
           用户产量分布
         </h2>
         <TrendChart
-          :labels="(summary.users || []).map((u) => u.userName)"
-          :values="(summary.users || []).map((u) => u.quantity)"
+          :labels="distinctUsers.map((u) => u.userName)"
+          :values="distinctUsers.map((u) => u.quantity)"
           label="用户产量"
         />
       </section>
 
       <section class="card fade-up">
-        <h2 class="card__title">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-          用户列表
-        </h2>
-        <ProductionTable :rows="summary.users || []" category="zpl" @row-click="openDetail" />
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+          <h2 class="card__title" style="margin-bottom: 0;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            用户列表
+          </h2>
+          <button
+            type="button"
+            class="btn btn-ghost"
+            style="padding: 4px 12px; font-size: 13px;"
+            @click="router.push('/zpl/users')"
+          >
+            按区域查看用户概览 →
+          </button>
+        </div>
+        <!-- 点击行先进入按区域区分的 userlistview 页面 -->
+        <ProductionTable :rows="distinctUsers" category="zpl" @row-click="openUserList" />
       </section>
     </template>
   </div>

@@ -39,6 +39,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/zpl/users',
+    name: 'zpl-users',
+    component: () => import('../views/UserListView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/zpl/detail',
     name: 'zpl-detail',
     component: () => import('../views/ZplDetailView.vue'),
