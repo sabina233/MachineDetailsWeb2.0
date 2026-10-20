@@ -17,6 +17,19 @@ const orderChart = ref({ labels: [], values: [] })
 const brandChart = ref({ labels: [], values: [] })
 const error = ref('')
 
+// 表格分页状态
+const page = ref(1)
+const pageSize = 10
+const totalPages = computed(() => Math.max(1, Math.ceil(history.value.length / pageSize)))
+const pagedHistory = computed(() =>
+  history.value.slice((page.value - 1) * pageSize, page.value * pageSize)
+)
+
+function changePage(next) {
+  if (next < 1 || next > totalPages.value || next === page.value) return
+  page.value = next
+}
+
 async function load({ start, end } = {}) {
   error.value = ''
   const s = start || filters.range.start
@@ -32,6 +45,7 @@ async function load({ start, end } = {}) {
     history.value = h || []
     orderChart.value = toChart(oc)
     brandChart.value = toChart(bc, 'name')
+    page.value = 1
   } catch {
     error.value = '加载失败，请重试'
   }
@@ -169,13 +183,19 @@ onMounted(load)
 
     <!-- 订单历史表格 -->
     <section class="card fade-up">
-      <h2 class="card__title">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-        订单历史
-      </h2>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+        <h2 class="card__title" style="margin-bottom: 0;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          历史订单记录
+        </h2>
+        <span style="font-size: 12px; color: var(--muted); font-weight: 600;">
+          共 {{ history.length }} 笔订单任务
+        </span>
+      </div>
+
       <div class="table-wrap">
         <table class="production-table" data-test="history-table">
           <thead>
@@ -189,7 +209,7 @@ onMounted(load)
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in history" :key="row.taskName">
+            <tr v-for="row in pagedHistory" :key="row.taskName + (row.startTime || '')">
               <td style="font-weight: 650; color: var(--navy);">{{ row.taskName }}</td>
               <td>{{ formatTs(row.startTime) }}</td>
               <td>{{ formatTs(row.endTime) }}</td>
@@ -202,6 +222,22 @@ onMounted(load)
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- 分页栏 -->
+      <div v-if="history.length > pageSize" class="pager">
+        <button type="button" class="btn btn-ghost" :disabled="page <= 1" @click="changePage(page - 1)">
+          上一页
+        </button>
+        <span style="font-weight: 600;">第 {{ page }} / {{ totalPages }} 页 (共 {{ history.length }} 笔订单)</span>
+        <button
+          type="button"
+          class="btn btn-ghost"
+          :disabled="page >= totalPages"
+          @click="changePage(page + 1)"
+        >
+          下一页
+        </button>
       </div>
     </section>
   </div>
