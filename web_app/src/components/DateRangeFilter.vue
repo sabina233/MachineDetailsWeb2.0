@@ -1,19 +1,36 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { getLocalDaysAgo, getLocalToday } from '../services/filterStore'
 
 const props = defineProps({
   start: { type: String, default: '' },
-  end: { type: String, default: '' }
+  end: { type: String, default: '' },
+  showQuickReset: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['query'])
 
-const today = () => new Date().toISOString().slice(0, 10)
-const start = ref(props.start || today())
-const end = ref(props.end || today())
+const start = ref(props.start || getLocalDaysAgo(6))
+const end = ref(props.end || getLocalToday())
+
+// 监听 props 变化，保证外部筛选状态变更时输入框即时同步
+watch(
+  () => [props.start, props.end],
+  ([newStart, newEnd]) => {
+    if (newStart) start.value = newStart
+    if (newEnd) end.value = newEnd
+  }
+)
 
 function submit() {
   emit('query', { start: start.value, end: end.value })
+}
+
+// 一键切回当前日期的前一周
+function setWeek() {
+  start.value = getLocalDaysAgo(6)
+  end.value = getLocalToday()
+  submit()
 }
 </script>
 
@@ -45,6 +62,16 @@ function submit() {
         <line x1="21" y1="21" x2="16.65" y2="16.65" />
       </svg>
       查询
+    </button>
+    <button
+      v-if="showQuickReset"
+      type="button"
+      class="btn btn-ghost"
+      style="padding: 6px 12px; font-size: 13px;"
+      title="一键设定为当前日期的前一周（近7天）"
+      @click="setWeek"
+    >
+      近一周
     </button>
   </div>
 </template>

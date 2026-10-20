@@ -32,10 +32,13 @@ const totalPages = ref(1)
 const page = ref(1)
 const pageSize = 10
 const dailyTotal = ref(0)
+const totalOrderCount = ref(0)
 const trend = ref({ labels: [], values: [] })
 const error = ref('')
 const loading = ref(false)
 
+// 缓存单用户全量历史数据，用于前端平滑分页，消除趋势图被 10 条限制的问题
+const singleUserAllRows = ref([])
 // 缓存区域合并模式下的全量历史数据
 const mergedAllRows = ref([])
 
@@ -95,8 +98,9 @@ async function loadSingleUserData(s, e) {
   const targetName = selectedUser.value || (regionUsers.value[0]?.userName ?? '')
   if (!targetName) return
 
+  // 获取该用户的订单全量记录（上限放开至 5000 笔），彻底解决单用户订单数被表格分页 10 条截断的问题
   const [history, daily] = await Promise.all([
-    zplApi.getHistory(targetName, s, e, page.value, pageSize),
+    zplApi.getHistory(targetName, s, e, 1, 5000),
     dashboardApi.getZplSummary(s, e)
   ])
 
@@ -107,9 +111,16 @@ async function loadSingleUserData(s, e) {
   )
   dailyTotal.value = matchedUsers.reduce((sum, u) => sum + (Number(u.quantity) || 0), 0)
 
-  rows.value = history.data || []
-  totalPages.value = history.totalPages || 1
-  trend.value = buildTrend(rows.value)
+  // 存储全量订单记录并统计真实订单总数
+  singleUserAllRows.value = history.data || []
+  totalOrderCount.value = history.totalCount ?? singleUserAllRows.value.length
+
+  // 趋势图根据区间内的全部订单进行每日汇总计算（不再只统计前10条）
+  trend.value = buildTrend(singleUserAllRows.value)
+
+  // 表格前端分页，每页 10 条
+  totalPages.value = Math.max(1, Math.ceil(singleUserAllRows.value.length / pageSize))
+  rows.value = singleUserAllRows.value.slice((page.value - 1) * pageSize, page.value * pageSize)
 }
 
 // 2. 加载区域合并数据
@@ -117,19 +128,20 @@ async function loadMergedData(s, e) {
   // 合并计算该区域内所有用户的总结案量
   dailyTotal.value = regionUsers.value.reduce((sum, u) => sum + (Number(u.quantity) || 0), 0)
 
-  // 批量拉取区域内所有用户的历史订单记录并前端合并
+  // 批量拉取区域内所有用户的历史订单记录并前端合并（每人上限5000）
   const usersToFetch = regionUsers.value.length ? regionUsers.value : (queryUserNames.value.map(name => ({ userName: name })))
   
   if (!usersToFetch.length) {
     rows.value = []
     totalPages.value = 1
+    totalOrderCount.value = 0
     trend.value = { labels: [], values: [] }
     return
   }
 
   const historyResults = await Promise.all(
     usersToFetch.map((u) =>
-      zplApi.getHistory(u.userName, s, e, 1, 50).catch(() => ({ data: [] }))
+      zplApi.getHistory(u.userName, s, e, 1, 5000).catch(() => ({ data: [] }))
     )
   )
 
@@ -148,6 +160,7 @@ async function loadMergedData(s, e) {
   // 按订单最新时间降序排列
   combined.sort((a, b) => new Date(b.endTime || b.startTime || 0) - new Date(a.endTime || a.startTime || 0))
   mergedAllRows.value = combined
+  totalOrderCount.value = combined.length
 
   trend.value = buildTrend(combined)
   totalPages.value = Math.max(1, Math.ceil(combined.length / pageSize))
@@ -177,11 +190,8 @@ function buildTrend(historyRows) {
 function changePage(next) {
   if (next < 1 || next > totalPages.value || next === page.value) return
   page.value = next
-  if (currentMode.value === 'merged') {
-    rows.value = mergedAllRows.value.slice((page.value - 1) * pageSize, page.value * pageSize)
-  } else {
-    load()
-  }
+  const source = currentMode.value === 'merged' ? mergedAllRows.value : singleUserAllRows.value
+  rows.value = source.slice((page.value - 1) * pageSize, page.value * pageSize)
 }
 
 // 切换到区域合并展示模式
@@ -271,16 +281,18 @@ onMounted(load)
       </div>
     </div>
 
-    <!-- 日结案总产量 -->
-    <section class="card fade-up">
-      <h2 class="card__title">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-        {{ currentMode === 'merged' ? `${region} 区域结案总产量 (已合并全部用户)` : `${selectedUser} 个人结案总产量` }}
-      </h2>
-      <div class="summary-total__value">{{ dailyTotal }}</div>
+    <!-- 统计卡片：总结案量 与 总订单数 -->
+    <section class="stats-row fade-up">
+      <div class="stat-card card">
+        <span class="stat-card__label">{{ currentMode === 'merged' ? `${region} 区域结案总产量` : `${selectedUser} 个人结案总产量` }}</span>
+        <span class="stat-card__value">{{ dailyTotal }}</span>
+        <span class="stat-card__sub">{{ currentMode === 'merged' ? `已合并 ${region} 区域全部 ${regionUsers.length} 名用户` : `${selectedUser} 生产标签片数` }}</span>
+      </div>
+      <div class="stat-card card">
+        <span class="stat-card__label">{{ currentMode === 'merged' ? `${region} 区域订单总数` : `${selectedUser} 订单总数` }}</span>
+        <span class="stat-card__value stat-card__value--accent">{{ totalOrderCount }}</span>
+        <span class="stat-card__sub">有效结案订单总数 (真实全量统计)</span>
+      </div>
     </section>
 
     <!-- 每日订单趋势 -->
@@ -307,7 +319,10 @@ onMounted(load)
           历史订单记录
         </h2>
         <span v-if="currentMode === 'merged'" style="font-size: 12px; color: var(--muted); font-weight: 600;">
-          已汇集 {{ region }} 区域全部 {{ regionUsers.length }} 名用户的结案订单
+          已汇集 {{ region }} 区域全部 {{ regionUsers.length }} 名用户的结案订单 (共 {{ totalOrderCount }} 单)
+        </span>
+        <span v-else style="font-size: 12px; color: var(--muted); font-weight: 600;">
+          共 {{ totalOrderCount }} 单
         </span>
       </div>
 
@@ -347,7 +362,7 @@ onMounted(load)
         <button type="button" class="btn btn-ghost" :disabled="page <= 1" @click="changePage(page - 1)">
           上一页
         </button>
-        <span style="font-weight: 600;">第 {{ page }} / {{ totalPages }} 页</span>
+        <span style="font-weight: 600;">第 {{ page }} / {{ totalPages }} 页 (共 {{ totalOrderCount }} 单)</span>
         <button
           type="button"
           class="btn btn-ghost"
